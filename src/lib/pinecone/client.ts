@@ -1,14 +1,15 @@
 import { Pinecone } from "@pinecone-database/pinecone";
 import { v4 as uuidv4 } from "uuid";
+import { config } from "../config";
 
 // Initialize Pinecone client
 const pinecone = new Pinecone({
-  apiKey: process.env.PINECONE_API_KEY || "",
+  apiKey: config.pineconeApiKey,
 });
 
 // Get the index
 const getIndex = () => {
-  const indexName = process.env.PINECONE_INDEX_NAME || "podcast-transcripts";
+  const indexName = config.pineconeIndex;
   return pinecone.index(indexName);
 };
 

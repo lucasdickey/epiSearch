@@ -1,39 +1,28 @@
+/**
+ * Application configuration
+ * Loads environment variables and provides typed access to them
+ */
+
 // Load environment variables
-if (process.env.NODE_ENV !== "production") {
-  require("dotenv").config({ path: ".env.local" });
-}
+const env = process.env;
 
-// Database configuration
-const databaseUrl =
-  process.env.DATABASE_URL ||
-  "postgresql://postgres:postgres@localhost:5432/podcast_rag";
-
-// Pinecone configuration
-const pineconeApiKey = process.env.PINECONE_API_KEY || "";
-const pineconeEnvironment = process.env.PINECONE_ENVIRONMENT || "";
-const pineconeIndex = process.env.PINECONE_INDEX || "";
-
-// Anthropic configuration
-const anthropicApiKey = process.env.ANTHROPIC_API_KEY || "";
-const anthropicModel =
-  process.env.ANTHROPIC_MODEL || "claude-3-sonnet-20240229";
-
-// Audio configuration
-const audioBasePath = process.env.AUDIO_BASE_PATH || "./public/audio";
-
-// Export configuration
 export const config = {
-  databaseUrl,
-  pinecone: {
-    apiKey: pineconeApiKey,
-    environment: pineconeEnvironment,
-    index: pineconeIndex,
-  },
-  anthropic: {
-    apiKey: anthropicApiKey,
-    model: anthropicModel,
-  },
-  audio: {
-    basePath: audioBasePath,
-  },
+  // Database configuration
+  databaseUrl:
+    env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/podcast",
+
+  // Pinecone configuration
+  pineconeApiKey: env.PINECONE_API_KEY || "",
+  pineconeEnvironment: env.PINECONE_ENVIRONMENT || "",
+  pineconeIndex: env.PINECONE_INDEX || "podcast-episodes",
+
+  // OpenAI configuration
+  openaiApiKey: env.OPENAI_API_KEY || "",
+  openaiEmbeddingModel: env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-large",
+  openaiCompletionModel: env.OPENAI_COMPLETION_MODEL || "gpt-4-turbo",
+
+  // Application configuration
+  nodeEnv: env.NODE_ENV || "development",
+  isDevelopment: (env.NODE_ENV || "development") === "development",
+  isProduction: env.NODE_ENV === "production",
 };

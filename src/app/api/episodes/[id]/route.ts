@@ -66,7 +66,6 @@ export async function PUT(request: NextRequest, { params }: Params) {
       summary: data.summary,
       published_date: publishedDate,
       url: data.url,
-      audio_file_path: data.audio_file_path,
     });
 
     if (!episode) {

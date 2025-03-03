@@ -13,7 +13,6 @@ export interface Episode {
   summary?: string;
   published_date?: Date;
   url?: string;
-  audio_file_path?: string;
 }
 
 export interface Speaker {
@@ -58,7 +57,6 @@ export interface Citation {
   podcast_name: string;
   speaker_name?: string;
   url?: string;
-  audio_url?: string;
 }
 
 export interface QueryResponse {
