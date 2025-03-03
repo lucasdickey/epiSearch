@@ -19,7 +19,7 @@ export async function getPodcasts(): Promise<Podcast[]> {
   const client = await pool.connect();
   try {
     const result = await client.query("SELECT * FROM podcasts ORDER BY name");
-    return result.rows;
+    return result.rows as Podcast[];
   } finally {
     client.release();
   }
@@ -31,7 +31,7 @@ export async function getPodcastById(id: number): Promise<Podcast | null> {
     const result = await client.query("SELECT * FROM podcasts WHERE id = $1", [
       id,
     ]);
-    return result.rows.length > 0 ? result.rows[0] : null;
+    return result.rows.length > 0 ? (result.rows[0] as Podcast) : null;
   } finally {
     client.release();
   }
@@ -47,7 +47,7 @@ export async function createPodcast(
       "INSERT INTO podcasts (name, description, url) VALUES ($1, $2, $3) RETURNING *",
       [name, description || null, url || null]
     );
-    return result.rows[0];
+    return result.rows[0] as Podcast;
   } finally {
     client.release();
   }
@@ -95,7 +95,7 @@ export async function updatePodcast(
       values
     );
 
-    return result.rows.length > 0 ? result.rows[0] : null;
+    return result.rows.length > 0 ? (result.rows[0] as Podcast) : null;
   } finally {
     client.release();
   }
@@ -125,10 +125,10 @@ export async function getEpisodes(podcastId?: number): Promise<Episode[]> {
       values.push(podcastId);
     }
 
-    query += " ORDER BY title";
+    query += " ORDER BY published_date DESC";
 
     const result = await client.query(query, values);
-    return result.rows;
+    return result.rows as Episode[];
   } finally {
     client.release();
   }
@@ -140,7 +140,7 @@ export async function getEpisodeById(id: number): Promise<Episode | null> {
     const result = await client.query("SELECT * FROM episodes WHERE id = $1", [
       id,
     ]);
-    return result.rows.length > 0 ? result.rows[0] : null;
+    return result.rows.length > 0 ? (result.rows[0] as Episode) : null;
   } finally {
     client.release();
   }
@@ -177,7 +177,7 @@ export async function createEpisode(
       ]
     );
 
-    return result.rows[0];
+    return result.rows[0] as Episode;
   } finally {
     client.release();
   }
@@ -240,7 +240,7 @@ export async function updateEpisode(
       values
     );
 
-    return result.rows.length > 0 ? result.rows[0] : null;
+    return result.rows.length > 0 ? (result.rows[0] as Episode) : null;
   } finally {
     client.release();
   }
@@ -263,7 +263,7 @@ export async function getSpeakers(): Promise<Speaker[]> {
   const client = await pool.connect();
   try {
     const result = await client.query("SELECT * FROM speakers ORDER BY name");
-    return result.rows;
+    return result.rows as Speaker[];
   } finally {
     client.release();
   }
@@ -275,7 +275,7 @@ export async function getSpeakerById(id: number): Promise<Speaker | null> {
     const result = await client.query("SELECT * FROM speakers WHERE id = $1", [
       id,
     ]);
-    return result.rows.length > 0 ? result.rows[0] : null;
+    return result.rows.length > 0 ? (result.rows[0] as Speaker) : null;
   } finally {
     client.release();
   }
@@ -291,7 +291,7 @@ export async function createSpeaker(
       "INSERT INTO speakers (name, bio) VALUES ($1, $2) RETURNING *",
       [name, bio || null]
     );
-    return result.rows[0];
+    return result.rows[0] as Speaker;
   } finally {
     client.release();
   }
@@ -305,7 +305,7 @@ export async function addSpeakerToEpisode(
   const client = await pool.connect();
   try {
     await client.query(
-      "INSERT INTO episode_speakers (episode_id, speaker_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+      "INSERT INTO episode_speakers (episode_id, speaker_id) VALUES ($1, $2) ON CONFLICT (episode_id, speaker_id) DO NOTHING",
       [episodeId, speakerId]
     );
     return true;
@@ -329,7 +329,7 @@ export async function getEpisodeSpeakers(
        ORDER BY s.name`,
       [episodeId]
     );
-    return result.rows;
+    return result.rows as Speaker[];
   } finally {
     client.release();
   }
@@ -364,7 +364,7 @@ export async function storeTranscriptChunk(
         embedding_id || null,
       ]
     );
-    return result.rows[0];
+    return result.rows[0] as TranscriptChunk;
   } finally {
     client.release();
   }
@@ -379,7 +379,7 @@ export async function getTranscriptChunks(
       "SELECT * FROM transcript_chunks WHERE episode_id = $1 ORDER BY start_time",
       [episodeId]
     );
-    return result.rows;
+    return result.rows as TranscriptChunk[];
   } finally {
     client.release();
   }
@@ -424,10 +424,10 @@ export async function searchTranscriptsByKeyword(
     }
 
     // Add ORDER BY and LIMIT
-    sql += " ORDER BY tc.start_time LIMIT 100";
+    sql += " ORDER BY tc.start_time LIMIT 50";
 
     const result = await client.query(sql, values);
-    return result.rows;
+    return result.rows as TranscriptChunk[];
   } finally {
     client.release();
   }
