@@ -257,16 +257,13 @@ export default function AdminPage() {
       if (response.ok) {
         const data = await response.json();
         showMessage(
-          `Transcript processed successfully: ${data.message}`,
+          `Transcript uploaded successfully. ${data.message}`,
           "success"
         );
-        setTranscriptForm({
-          episodeId: 0,
-          transcript: "",
-        });
+        setTranscriptForm({ episodeId: 0, transcript: "" });
       } else {
         const error = await response.json();
-        showMessage(error.error || "Failed to process transcript", "error");
+        showMessage(error.error || "Failed to upload transcript", "error");
       }
     } catch (error) {
       console.error("Error uploading transcript:", error);
@@ -743,93 +740,87 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Upload transcript tab */}
+        {/* Upload Transcript Tab */}
         {activeTab === "upload" && (
-          <div className="max-w-3xl mx-auto">
-            <h2 className="text-xl font-semibold mb-4">Upload Transcript</h2>
-
-            <form
-              onSubmit={uploadTranscript}
-              className="bg-white shadow rounded-md p-6"
-            >
-              <div className="mb-4">
-                <label
-                  htmlFor="episodeId"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Episode *
-                </label>
-                <select
-                  id="episodeId"
-                  name="episodeId"
-                  value={transcriptForm.episodeId}
-                  onChange={handleTranscriptFormChange}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="">Select an episode</option>
-                  {podcasts.map((podcast) => (
-                    <optgroup key={podcast.id} label={podcast.name}>
-                      {episodes
-                        .filter((episode) => episode.podcast_id === podcast.id)
-                        .map((episode) => (
-                          <option key={episode.id} value={episode.id}>
-                            {episode.title}
-                          </option>
-                        ))}
-                    </optgroup>
-                  ))}
-                </select>
-              </div>
-
-              <div className="mb-4">
-                <label
-                  htmlFor="transcript"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Transcript JSON *
-                </label>
-                <textarea
-                  id="transcript"
-                  name="transcript"
-                  value={transcriptForm.transcript}
-                  onChange={handleTranscriptFormChange}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                  rows={15}
-                  placeholder={`{
-  "segments": [
-    {
-      "text": "Hello and welcome to the podcast.",
-      "speaker": "Host",
-      "speakerId": 1,
-      "start": 0.0,
-      "end": 3.5
-    },
-    {
-      "text": "Thanks for having me.",
-      "speaker": "Guest",
-      "speakerId": 2,
-      "start": 3.6,
-      "end": 5.2
-    }
-  ]
-}`}
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-blue-600 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-400"
-                disabled={
-                  isLoading ||
-                  !transcriptForm.episodeId ||
-                  !transcriptForm.transcript
-                }
+          <div className="mt-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Upload Transcript</h2>
+              <Link
+                href="/admin/transcript-upload"
+                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
               >
-                {isLoading ? "Processing..." : "Upload Transcript"}
-              </button>
-            </form>
+                New SRT + Diarized Upload
+              </Link>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <form onSubmit={uploadTranscript}>
+                <div className="mb-4">
+                  <label
+                    htmlFor="episodeId"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Episode
+                  </label>
+                  <select
+                    id="episodeId"
+                    name="episodeId"
+                    value={transcriptForm.episodeId}
+                    onChange={handleTranscriptFormChange}
+                    className="w-full p-2 border border-gray-300 rounded"
+                  >
+                    <option value="">Select Episode</option>
+                    {episodes.map((episode) => (
+                      <option key={episode.id} value={episode.id}>
+                        {episode.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mb-4">
+                  <label
+                    htmlFor="transcript"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Transcript JSON
+                  </label>
+                  <textarea
+                    id="transcript"
+                    name="transcript"
+                    value={transcriptForm.transcript}
+                    onChange={handleTranscriptFormChange}
+                    className="w-full p-2 border border-gray-300 rounded h-64 font-mono"
+                    placeholder='{"segments": [{"text": "Hello", "speaker": "John", "start": 0, "end": 1}]}'
+                  ></textarea>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Enter transcript JSON with segments array. Each segment
+                    should have text, speaker, start, and end properties.
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    For SRT and diarized text format, use the{" "}
+                    <Link
+                      href="/admin/transcript-upload"
+                      className="text-blue-500 hover:underline"
+                    >
+                      new upload page
+                    </Link>
+                    .
+                  </p>
+                </div>
+                <div className="mt-6">
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className={`px-4 py-2 rounded font-medium ${
+                      isLoading
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-blue-500 hover:bg-blue-600 text-white"
+                    }`}
+                  >
+                    {isLoading ? "Uploading..." : "Upload Transcript"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
       </main>

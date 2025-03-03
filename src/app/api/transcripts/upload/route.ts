@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   parseTranscriptJSON,
   processTranscript,
+  parseSRTAndDiarized,
 } from "@/lib/chunking/processor";
 import { getEpisodeById } from "@/lib/database/postgres";
 
@@ -24,19 +25,46 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Episode not found" }, { status: 404 });
     }
 
-    // Parse and process transcript
-    try {
-      // Add episode and podcast IDs to transcript data
-      const transcriptData = {
-        ...data,
-        podcastId: episode.podcast_id,
-        episodeId: episode.id,
-        title: episode.title,
-        description: episode.description,
-      };
+    // Create metadata object
+    const metadata = {
+      podcastId: episode.podcast_id,
+      episodeId: episode.id,
+      title: episode.title,
+      description: episode.description,
+    };
 
-      // Parse transcript JSON
-      const transcript = parseTranscriptJSON(transcriptData);
+    // Process transcript based on format
+    try {
+      let transcript;
+
+      // Check which format we're dealing with
+      if (data.srtContent && data.diarizedContent) {
+        // SRT + diarized text format
+        transcript = parseSRTAndDiarized(
+          data.srtContent,
+          data.diarizedContent,
+          metadata
+        );
+      } else if (data.segments) {
+        // Legacy JSON format
+        const transcriptData = {
+          ...data,
+          podcastId: episode.podcast_id,
+          episodeId: episode.id,
+          title: episode.title,
+          description: episode.description,
+        };
+        transcript = parseTranscriptJSON(transcriptData);
+      } else {
+        return NextResponse.json(
+          {
+            error: "Invalid transcript format",
+            details:
+              "Please provide either srtContent + diarizedContent or segments",
+          },
+          { status: 400 }
+        );
+      }
 
       // Process transcript
       const result = await processTranscript(transcript);
