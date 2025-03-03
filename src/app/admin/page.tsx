@@ -18,7 +18,6 @@ interface Episode {
   summary?: string;
   published_date?: string;
   url?: string;
-  audio_file_path?: string;
 }
 
 export default function AdminPage() {
@@ -49,7 +48,6 @@ export default function AdminPage() {
     summary: "",
     published_date: "",
     url: "",
-    audio_file_path: "",
   });
 
   const [transcriptForm, setTranscriptForm] = useState({
@@ -204,7 +202,6 @@ export default function AdminPage() {
           summary: "",
           published_date: "",
           url: "",
-          audio_file_path: "",
         });
         showMessage("Episode created successfully", "success");
       } else {
@@ -730,24 +727,6 @@ export default function AdminPage() {
                       value={episodeForm.url}
                       onChange={handleEpisodeFormChange}
                       className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div className="mb-4">
-                    <label
-                      htmlFor="audio_file_path"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Audio File Path
-                    </label>
-                    <input
-                      type="text"
-                      id="audio_file_path"
-                      name="audio_file_path"
-                      value={episodeForm.audio_file_path}
-                      onChange={handleEpisodeFormChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="/path/to/audio/file.mp3"
                     />
                   </div>
 

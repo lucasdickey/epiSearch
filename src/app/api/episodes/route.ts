@@ -46,7 +46,6 @@ export async function POST(request: NextRequest) {
         ? new Date(data.published_date)
         : undefined,
       url: data.url,
-      audio_file_path: data.audio_file_path,
     });
 
     return NextResponse.json(episode, { status: 201 });

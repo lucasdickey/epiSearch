@@ -31,8 +31,7 @@ export async function initializeDatabase(): Promise<void> {
         description TEXT,
         summary TEXT,
         published_date DATE,
-        url TEXT,
-        audio_file_path TEXT
+        url TEXT
       )
     `);
 
