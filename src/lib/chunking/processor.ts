@@ -2,26 +2,8 @@ import { TranscriptChunk } from "../database/types";
 import { generateEmbeddings } from "../claude/client";
 import { storeEmbeddings } from "../pinecone/client";
 import { storeTranscriptChunk } from "../database/postgres";
-
-// Define transcript segment interface
-interface TranscriptSegment {
-  content: string;
-  speaker: string;
-  speakerId?: number;
-  startTime: number;
-  endTime: number;
-}
-
-// Define transcript interface
-interface Transcript {
-  segments: TranscriptSegment[];
-  metadata: {
-    podcastId: number;
-    episodeId: number;
-    title: string;
-    description?: string;
-  };
-}
+import { TranscriptSegment, Transcript } from "./types";
+import { parseSRT, parseDiarizedText, combineTranscripts } from "./srt-parser";
 
 // Create sentence-level chunks
 function createSentenceChunks(transcript: Transcript): TranscriptChunk[] {
@@ -179,4 +161,25 @@ export function parseTranscriptJSON(transcriptJSON: any): Transcript {
     console.error("Error parsing transcript JSON:", error);
     throw new Error("Invalid transcript JSON format");
   }
+}
+
+// Parse SRT and diarized text
+export function parseSRTAndDiarized(
+  srtContent: string,
+  diarizedContent: string,
+  metadata: {
+    podcastId: number;
+    episodeId: number;
+    title: string;
+    description?: string;
+  }
+): Transcript {
+  // Parse SRT file
+  const srtData = parseSRT(srtContent);
+
+  // Parse diarized text
+  const diarizedData = parseDiarizedText(diarizedContent);
+
+  // Combine the two sources
+  return combineTranscripts(srtData, diarizedData, metadata);
 }
