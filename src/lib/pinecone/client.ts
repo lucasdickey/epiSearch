@@ -39,6 +39,19 @@ export async function storeEmbeddings(
   // Create vectors with metadata
   const vectors = embeddings.map((embedding, i) => {
     const id = uuidv4();
+
+    // Ensure embedding is not empty and has values
+    if (!embedding || embedding.length === 0) {
+      console.warn(
+        `Empty embedding detected for content: "${contents[i].substring(
+          0,
+          50
+        )}..."`
+      );
+      // Create a zero vector with appropriate dimensions (3072 for Claude)
+      embedding = new Array(3072).fill(0);
+    }
+
     return {
       id,
       values: embedding,
@@ -53,12 +66,24 @@ export async function storeEmbeddings(
     };
   });
 
+  // Filter out any invalid vectors
+  const validVectors = vectors.filter(
+    (vector) =>
+      vector.values && Array.isArray(vector.values) && vector.values.length > 0
+  );
+
+  if (validVectors.length < vectors.length) {
+    console.warn(
+      `Filtered out ${vectors.length - validVectors.length} invalid vectors`
+    );
+  }
+
   // Upsert vectors in batches of 100
   const batchSize = 100;
   const embeddingIds: string[] = [];
 
-  for (let i = 0; i < vectors.length; i += batchSize) {
-    const batch = vectors.slice(i, i + batchSize);
+  for (let i = 0; i < validVectors.length; i += batchSize) {
+    const batch = validVectors.slice(i, i + batchSize);
     await index.namespace(namespace).upsert(batch);
     embeddingIds.push(...batch.map((v) => v.id));
   }

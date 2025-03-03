@@ -1,4 +1,4 @@
-// Define transcript segment interface
+// Define the structure of a transcript segment
 export interface TranscriptSegment {
   content: string;
   speaker: string;
@@ -7,7 +7,7 @@ export interface TranscriptSegment {
   endTime: number;
 }
 
-// Define transcript interface
+// Define the structure of a complete transcript
 export interface Transcript {
   segments: TranscriptSegment[];
   metadata: {

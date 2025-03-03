@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
 interface Podcast {
@@ -52,8 +52,12 @@ export default function AdminPage() {
 
   const [transcriptForm, setTranscriptForm] = useState({
     episodeId: 0,
-    transcript: "",
+    srtContent: "",
+    diarizedContent: "",
   });
+
+  const srtFileRef = useRef<HTMLInputElement>(null);
+  const diarizedFileRef = useRef<HTMLInputElement>(null);
 
   // Fetch podcasts on component mount
   useEffect(() => {
@@ -135,6 +139,28 @@ export default function AdminPage() {
       ...prev,
       [name]: name === "episodeId" ? parseInt(value) : value,
     }));
+  };
+
+  // Handle SRT file change
+  const handleSrtFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const text = await file.text();
+    setTranscriptForm((prev) => ({ ...prev, srtContent: text }));
+  };
+
+  // Handle diarized file change
+  const handleDiarizedFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const text = await file.text();
+    setTranscriptForm((prev) => ({ ...prev, diarizedContent: text }));
   };
 
   // Create podcast
@@ -225,33 +251,24 @@ export default function AdminPage() {
       return;
     }
 
-    if (!transcriptForm.transcript) {
-      showMessage("Transcript is required", "error");
+    if (!transcriptForm.srtContent || !transcriptForm.diarizedContent) {
+      showMessage("Both SRT and diarized text files are required", "error");
       return;
     }
 
     setIsLoading(true);
     try {
-      // Parse transcript JSON
-      let transcriptData;
-      try {
-        transcriptData = JSON.parse(transcriptForm.transcript);
-      } catch (error) {
-        showMessage("Invalid JSON format", "error");
-        setIsLoading(false);
-        return;
-      }
-
-      // Add episode ID to transcript data
-      transcriptData.episodeId = transcriptForm.episodeId;
-
       // Upload transcript
       const response = await fetch("/api/transcripts/upload", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(transcriptData),
+        body: JSON.stringify({
+          episodeId: transcriptForm.episodeId,
+          srtContent: transcriptForm.srtContent,
+          diarizedContent: transcriptForm.diarizedContent,
+        }),
       });
 
       if (response.ok) {
@@ -260,7 +277,13 @@ export default function AdminPage() {
           `Transcript uploaded successfully. ${data.message}`,
           "success"
         );
-        setTranscriptForm({ episodeId: 0, transcript: "" });
+        setTranscriptForm({
+          episodeId: 0,
+          srtContent: "",
+          diarizedContent: "",
+        });
+        if (srtFileRef.current) srtFileRef.current.value = "";
+        if (diarizedFileRef.current) diarizedFileRef.current.value = "";
       } else {
         const error = await response.json();
         showMessage(error.error || "Failed to upload transcript", "error");
@@ -743,14 +766,8 @@ export default function AdminPage() {
         {/* Upload Transcript Tab */}
         {activeTab === "upload" && (
           <div className="mt-6">
-            <div className="flex justify-between items-center mb-4">
+            <div className="mb-4">
               <h2 className="text-xl font-bold">Upload Transcript</h2>
-              <Link
-                href="/admin/transcript-upload"
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
-              >
-                New SRT + Diarized Upload
-              </Link>
             </div>
             <div className="bg-white p-6 rounded-lg shadow-md">
               <form onSubmit={uploadTranscript}>
@@ -776,36 +793,61 @@ export default function AdminPage() {
                     ))}
                   </select>
                 </div>
+
                 <div className="mb-4">
                   <label
-                    htmlFor="transcript"
+                    htmlFor="srtFile"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Transcript JSON
+                    SRT File (with timestamps)
                   </label>
-                  <textarea
-                    id="transcript"
-                    name="transcript"
-                    value={transcriptForm.transcript}
-                    onChange={handleTranscriptFormChange}
-                    className="w-full p-2 border border-gray-300 rounded h-64 font-mono"
-                    placeholder='{"segments": [{"text": "Hello", "speaker": "John", "start": 0, "end": 1}]}'
-                  ></textarea>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Enter transcript JSON with segments array. Each segment
-                    should have text, speaker, start, and end properties.
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    For SRT and diarized text format, use the{" "}
-                    <Link
-                      href="/admin/transcript-upload"
-                      className="text-blue-500 hover:underline"
-                    >
-                      new upload page
-                    </Link>
-                    .
-                  </p>
+                  <input
+                    type="file"
+                    id="srtFile"
+                    ref={srtFileRef}
+                    accept=".srt,.txt"
+                    onChange={handleSrtFileChange}
+                    className="w-full p-2 border border-gray-300 rounded"
+                  />
+                  {transcriptForm.srtContent && (
+                    <div className="mt-2 p-2 bg-gray-100 rounded text-sm">
+                      <div className="font-medium">SRT Preview:</div>
+                      <pre className="whitespace-pre-wrap max-h-40 overflow-y-auto mt-1">
+                        {transcriptForm.srtContent.slice(0, 500)}
+                        {transcriptForm.srtContent.length > 500 ? "..." : ""}
+                      </pre>
+                    </div>
+                  )}
                 </div>
+
+                <div className="mb-4">
+                  <label
+                    htmlFor="diarizedFile"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Diarized Text File (with speakers)
+                  </label>
+                  <input
+                    type="file"
+                    id="diarizedFile"
+                    ref={diarizedFileRef}
+                    accept=".txt"
+                    onChange={handleDiarizedFileChange}
+                    className="w-full p-2 border border-gray-300 rounded"
+                  />
+                  {transcriptForm.diarizedContent && (
+                    <div className="mt-2 p-2 bg-gray-100 rounded text-sm">
+                      <div className="font-medium">Diarized Text Preview:</div>
+                      <pre className="whitespace-pre-wrap max-h-40 overflow-y-auto mt-1">
+                        {transcriptForm.diarizedContent.slice(0, 500)}
+                        {transcriptForm.diarizedContent.length > 500
+                          ? "..."
+                          : ""}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+
                 <div className="mt-6">
                   <button
                     type="submit"
@@ -820,6 +862,42 @@ export default function AdminPage() {
                   </button>
                 </div>
               </form>
+            </div>
+
+            <div className="mt-8 bg-white p-6 rounded-lg shadow-md">
+              <h2 className="text-xl font-bold mb-4">File Format Examples</h2>
+
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">
+                  SRT Format Example:
+                </h3>
+                <pre className="bg-gray-100 p-3 rounded text-sm whitespace-pre-wrap">
+                  {`1
+00:00:00,160 --> 00:00:03,288
+I witness almost daily people
+
+2
+00:00:03,344 --> 00:00:06,952
+that are either in government or even friends of ours
+
+3
+00:00:07,096 --> 00:00:10,616
+who say we have to win the AI war with China.`}
+                </pre>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold mb-2">
+                  Diarized Text Format Example:
+                </h3>
+                <pre className="bg-gray-100 p-3 rounded text-sm whitespace-pre-wrap">
+                  {`Bill Gurley: I witness almost daily people that are either in government or even friends of ours who say we have to win the AI war with China. And I don't know what that means.
+
+Brad Gerstner: It's too late.
+
+Bill Gurley: And they're smart.`}
+                </pre>
+              </div>
             </div>
           </div>
         )}

@@ -85,6 +85,31 @@ export async function processTranscript(transcript: Transcript): Promise<{
   success: boolean;
 }> {
   try {
+    // Validate transcript data
+    if (
+      !transcript ||
+      !transcript.segments ||
+      transcript.segments.length === 0
+    ) {
+      console.error("Invalid transcript: Missing or empty segments");
+      return {
+        chunkCount: 0,
+        success: false,
+      };
+    }
+
+    if (
+      !transcript.metadata ||
+      !transcript.metadata.episodeId ||
+      !transcript.metadata.podcastId
+    ) {
+      console.error("Invalid transcript: Missing required metadata");
+      return {
+        chunkCount: 0,
+        success: false,
+      };
+    }
+
     // Create sentence-level chunks
     const sentenceChunks = createSentenceChunks(transcript);
 
@@ -94,14 +119,46 @@ export async function processTranscript(transcript: Transcript): Promise<{
     // Combine all chunks
     const allChunks = [...sentenceChunks, ...crossSectionChunks];
 
+    if (allChunks.length === 0) {
+      console.error("No chunks created from transcript");
+      return {
+        chunkCount: 0,
+        success: false,
+      };
+    }
+
+    // Filter out chunks with empty content
+    const validChunks = allChunks.filter(
+      (chunk) => chunk.content && chunk.content.trim().length > 0
+    );
+
+    if (validChunks.length < allChunks.length) {
+      console.warn(
+        `Filtered out ${allChunks.length - validChunks.length} empty chunks`
+      );
+    }
+
     // Generate embeddings
-    const contents = allChunks.map((chunk) => chunk.content);
+    const contents = validChunks.map((chunk) => chunk.content);
     const embeddings = await generateEmbeddings(contents);
 
+    // Validate embeddings
+    if (!embeddings || embeddings.length !== contents.length) {
+      console.error(
+        `Embedding generation failed: Expected ${
+          contents.length
+        } embeddings, got ${embeddings?.length || 0}`
+      );
+      return {
+        chunkCount: 0,
+        success: false,
+      };
+    }
+
     // Store embeddings in Pinecone
-    const speakerIds = allChunks.map((chunk) => chunk.speaker_id);
-    const startTimes = allChunks.map((chunk) => chunk.start_time);
-    const endTimes = allChunks.map((chunk) => chunk.end_time);
+    const speakerIds = validChunks.map((chunk) => chunk.speaker_id);
+    const startTimes = validChunks.map((chunk) => chunk.start_time);
+    const endTimes = validChunks.map((chunk) => chunk.end_time);
 
     const embeddingIds = await storeEmbeddings(
       embeddings,
@@ -113,16 +170,35 @@ export async function processTranscript(transcript: Transcript): Promise<{
       endTimes
     );
 
+    // Validate embedding IDs
+    if (!embeddingIds || embeddingIds.length !== validChunks.length) {
+      console.error(
+        `Embedding storage failed: Expected ${validChunks.length} IDs, got ${
+          embeddingIds?.length || 0
+        }`
+      );
+      return {
+        chunkCount: validChunks.length,
+        success: false,
+      };
+    }
+
     // Store chunks in PostgreSQL with embedding IDs
-    for (let i = 0; i < allChunks.length; i++) {
-      const chunk = allChunks[i];
-      chunk.embedding_id = embeddingIds[i];
-      await storeTranscriptChunk(chunk);
+    let storedChunks = 0;
+    for (let i = 0; i < validChunks.length; i++) {
+      try {
+        const chunk = validChunks[i];
+        chunk.embedding_id = embeddingIds[i];
+        await storeTranscriptChunk(chunk);
+        storedChunks++;
+      } catch (error) {
+        console.error(`Error storing chunk ${i}:`, error);
+      }
     }
 
     return {
-      chunkCount: allChunks.length,
-      success: true,
+      chunkCount: storedChunks,
+      success: storedChunks > 0,
     };
   } catch (error) {
     console.error("Error processing transcript:", error);

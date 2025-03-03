@@ -14,8 +14,16 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
 
   for (let i = 0; i < texts.length; i += batchSize) {
     const batch = texts.slice(i, i + batchSize);
-    const promises = batch.map(async (text) => {
+    const promises = batch.map(async (text, index) => {
       try {
+        // Skip empty text
+        if (!text || text.trim().length === 0) {
+          console.warn(
+            `Empty text at index ${i + index}, returning zero vector`
+          );
+          return new Array(3072).fill(0);
+        }
+
         // Using a separate API call for embeddings since it's not in the main SDK
         const response = await fetch(
           "https://api.anthropic.com/v1/embeddings",
@@ -33,7 +41,24 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
           }
         );
 
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error(`Embedding API error (${response.status}):`, errorData);
+          return new Array(3072).fill(0);
+        }
+
         const data = await response.json();
+
+        // Validate the embedding data
+        if (
+          !data.embedding ||
+          !Array.isArray(data.embedding) ||
+          data.embedding.length === 0
+        ) {
+          console.error("Invalid embedding response:", data);
+          return new Array(3072).fill(0);
+        }
+
         return data.embedding;
       } catch (error) {
         console.error("Error generating embedding:", error);
@@ -42,8 +67,14 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
       }
     });
 
-    const batchEmbeddings = await Promise.all(promises);
-    embeddings.push(...batchEmbeddings);
+    try {
+      const batchEmbeddings = await Promise.all(promises);
+      embeddings.push(...batchEmbeddings);
+    } catch (error) {
+      console.error("Error processing batch embeddings:", error);
+      // Add zero vectors for the entire batch as fallback
+      embeddings.push(...Array(batch.length).fill(new Array(3072).fill(0)));
+    }
   }
 
   return embeddings;
