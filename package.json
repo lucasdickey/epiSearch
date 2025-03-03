@@ -9,7 +9,7 @@
     "lint": "next lint",
     "init-db": "ts-node --transpile-only src/scripts/init-db.ts",
     "migrate-db": "ts-node --transpile-only --project scripts/tsconfig.json scripts/migrate.ts",
-    "migrate-db-direct": "ts-node --transpile-only scripts/migrate-direct.ts"
+    "migrate-db-direct": "node scripts/migrate-direct.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
