@@ -7,16 +7,16 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "init-db": "ts-node src/scripts/init-db.ts"
+    "init-db": "ts-node --transpile-only src/scripts/init-db.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
     "@pinecone-database/pinecone": "^5.1.0",
     "@vercel/blob": "^0.27.2",
     "@vercel/postgres": "^0.10.0",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.4.7",
     "next": "15.2.0",
-    "pg": "^8.11.3",
+    "pg": "^8.13.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-player": "^2.16.0",
@@ -26,7 +26,7 @@
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
-    "@types/pg": "^8.11.2",
+    "@types/pg": "^8.11.11",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/uuid": "^10.0.0",
@@ -34,6 +34,7 @@
     "eslint-config-next": "15.2.0",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
     "typescript": "^5"
   }
 }
